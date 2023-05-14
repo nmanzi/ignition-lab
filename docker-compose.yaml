@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD_FILE=/run/secrets/mssql-sa-password
+      - TZ='Australia/Perth'
+    secrets:
+      - mssql-sa-password
+  ignition:
+    image: inductiveautomation/ignition:latest
+    ports:
+      - "8088:8088"
+      - "8043:8043"
+    depends_on:
+      - sql
+    environment:
+      - ACCEPT_IGNITION_EULA=Y
+      - TZ='Australia/Perth'
+      - GATEWAY_ADMIN_USERNAME=admin
+      - GATEWAY_ADMIN_PASSWORD_FILE=/run/secrets/gateway-admin-password
+    volumes:
+      - ignition-data:/usr/local/bin/ignition/data
+    command: >
+      -n ignition-test
+      -h 8088
+      -s 8043
+      -a ignition-test
+      -m 2048
+    secrets:
+      - gateway-admin-password
+
+secrets:
+  mssql-sa-password:
+    file: ./secrets/mssql-sa-password.txt
+  gateway-admin-password:
+    file: ./secrets/gateway-admin-password.txt
+
+volumes:
+  sql-data:
+  ignition-data:
